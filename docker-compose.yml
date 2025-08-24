@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./social-media-manager-app
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./social-media-manager-app:/app
+
+  frontend:
+    build: ./social-media-manager-frontend
+    ports:
+      - "80:80"
+    volumes:
+      - ./social-media-manager-frontend:/app

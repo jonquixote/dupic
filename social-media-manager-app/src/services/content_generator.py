@@ -1,19 +1,24 @@
-import openai
 import json
+import asyncio
 from src.models import CharacterProfile, Trend
 from typing import Dict, List, Optional
+from src.ai_providers import ai_manager, AIProvider
 
 class ContentGenerator:
     """Service for generating AI-powered social media content"""
     
-    def __init__(self):
-        # OpenAI API is already configured via environment variables
-        try:
-            self.client = openai.OpenAI()
-        except openai.OpenAIError:
-            self.client = None
+    def __init__(self, provider: AIProvider, model: str):
+        """
+        Initialize the ContentGenerator with a specific AI provider and model.
+
+        :param provider: The AIProvider enum member (e.g., AIProvider.OPENAI).
+        :param model: The name of the model to use for generation (e.g., "gpt-4o-mini").
+        """
+        self.provider = provider
+        self.model = model
+        self.ai_manager = ai_manager
     
-    def generate_content(self, 
+    async def generate_content(self, 
                         trend: Trend, 
                         character: CharacterProfile, 
                         content_type: str = 'post',
@@ -25,8 +30,11 @@ class ContentGenerator:
         prompt = self._build_content_prompt(trend, character, content_type, platform, additional_context)
         
         try:
-            response = self.client.chat.completions.create(
-                model="gpt-4.1-mini",
+            # Determine the litellm model string
+            model_string = f"{self.provider.value}/{self.model}" if self.provider != AIProvider.OPENAI else self.model
+
+            response = await self.ai_manager.generate_text(
+                model_name=model_string,
                 messages=[
                     {"role": "system", "content": self._get_system_prompt()},
                     {"role": "user", "content": prompt}
@@ -35,34 +43,36 @@ class ContentGenerator:
                 temperature=0.7
             )
             
-            content = response.choices[0].message.content.strip()
+            content = response['content'].strip()
             
             # Parse the response and format it
             return self._format_generated_content(content, content_type, platform)
             
         except Exception as e:
             return {
-                'error': f'Failed to generate content: {str(e)}',
+                'error': f'Failed to generate content with {self.provider.value}/{self.model}: {str(e)}',
                 'content': '',
                 'hashtags': [],
                 'call_to_action': ''
             }
     
-    def generate_multiple_variations(self,
+    async def generate_multiple_variations(self,
                                    trend: Trend,
                                    character: CharacterProfile,
                                    content_type: str = 'post',
                                    platform: str = 'twitter',
                                    count: int = 3) -> List[Dict]:
-        """Generate multiple content variations"""
-        variations = []
+        """Generate multiple content variations concurrently"""
         
+        tasks = []
         for i in range(count):
             # Add variation context to make each generation unique
             variation_context = f"Variation {i+1}: Create a unique approach to this content."
-            content = self.generate_content(trend, character, content_type, platform, variation_context)
-            variations.append(content)
+            tasks.append(
+                self.generate_content(trend, character, content_type, platform, variation_context)
+            )
         
+        variations = await asyncio.gather(*tasks)
         return variations
     
     def _get_system_prompt(self) -> str:
@@ -206,16 +216,20 @@ Respond in JSON format only."""
                 'platform': platform
             }
     
-    def generate_hashtags(self, trend: Trend, character: CharacterProfile, count: int = 8) -> List[str]:
+    async def generate_hashtags(self, trend: Trend, character: CharacterProfile, count: int = 8) -> List[str]:
         """Generate relevant hashtags for a trend and character"""
+        
         prompt = f"""Generate {count} relevant hashtags for a social media post about "{trend.keyword}" 
         in the {trend.category} category, targeting {character.target_audience} with a {character.tone} tone.
         
         Return only the hashtags, one per line, starting with #."""
         
         try:
-            response = self.client.chat.completions.create(
-                model="gpt-4.1-mini",
+            # Determine the litellm model string
+            model_string = f"{self.provider.value}/{self.model}" if self.provider != AIProvider.OPENAI else self.model
+            
+            response = await self.ai_manager.generate_text(
+                model_name=model_string,
                 messages=[
                     {"role": "user", "content": prompt}
                 ],
@@ -223,7 +237,7 @@ Respond in JSON format only."""
                 temperature=0.7
             )
             
-            hashtags = [line.strip() for line in response.choices[0].message.content.strip().split('\n') 
+            hashtags = [line.strip() for line in response['content'].strip().split('\n') 
                        if line.strip().startswith('#')]
             
             return hashtags[:count]
