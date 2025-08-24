@@ -10,7 +10,7 @@ import { Settings } from '@/components/Settings'
 import { CharacterProfiles } from '@/components/CharacterProfiles'
 import { AIConfigurations } from '@/components/AIConfigurations'
 import { VideoAnalysis } from '@/components/VideoAnalysis'
-import './App.css'
+import './styles/App.css'
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -49,4 +49,3 @@ function App() {
 }
 
 export default App
-
