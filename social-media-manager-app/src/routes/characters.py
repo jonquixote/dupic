@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
-from src.models.trend import CharacterProfile, db
+from src.models.character import CharacterProfile
+from src.models import db
 import json
 
 characters_bp = Blueprint('characters', __name__)
@@ -157,4 +158,3 @@ def get_character_templates():
     ]
     
     return jsonify(templates)
-

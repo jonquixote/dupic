@@ -6,10 +6,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from flask import Flask, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
-from src.models import db, User, AIProviderConfig, VideoAnalysis, UserAnalytics, FavoriteContent, CharacterProfile, ApiKey, Trend, ContentRecommendation
+from .models import db, User, AIProviderConfig, VideoAnalysis, UserAnalytics, FavoriteContent, CharacterProfile, ApiKey, Trend, ContentRecommendation
 
 # Import blueprints
-from .routes.user import user_bp
 from .routes.ai_configs import ai_configs_bp
 from .routes.video_analysis import video_analysis_bp
 from .routes.user_analytics import user_analytics_bp
@@ -38,7 +37,6 @@ def create_app():
         db.create_all()
     
     # Register blueprints
-    app.register_blueprint(user_bp, url_prefix='/api')    
     app.register_blueprint(ai_configs_bp, url_prefix='/api')
     app.register_blueprint(video_analysis_bp, url_prefix='/api')
     app.register_blueprint(user_analytics_bp, url_prefix='/api')
