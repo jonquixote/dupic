@@ -8,7 +8,10 @@ class ContentGenerator:
     
     def __init__(self):
         # OpenAI API is already configured via environment variables
-        self.client = openai.OpenAI()
+        try:
+            self.client = openai.OpenAI()
+        except openai.OpenAIError:
+            self.client = None
     
     def generate_content(self, 
                         trend: Trend, 
