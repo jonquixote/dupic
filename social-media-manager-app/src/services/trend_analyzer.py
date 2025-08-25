@@ -1,7 +1,13 @@
 import json
 import random
+import os
+import logging
 from datetime import datetime, timedelta
 from src.models import Trend, ContentRecommendation, CharacterProfile, db, User
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class TrendAnalyzer:
     """Service for analyzing social media trends and generating content recommendations"""
@@ -9,17 +15,44 @@ class TrendAnalyzer:
     def __init__(self):
         self.platforms = ['twitter', 'instagram', 'tiktok', 'facebook']
         self.categories = ['technology', 'entertainment', 'lifestyle', 'business', 'sports', 'news']
+        
+        # Try to import social media libraries
+        self._init_social_media_clients()
+    
+    def _init_social_media_clients(self):
+        """Initialize social media API clients"""
+        try:
+            import tweepy
+            self.tweepy = tweepy
+            # Initialize Twitter client if credentials are available
+            twitter_bearer_token = os.getenv('TWITTER_BEARER_TOKEN')
+            if twitter_bearer_token:
+                self.twitter_client = tweepy.Client(bearer_token=twitter_bearer_token)
+                logger.info("Twitter client initialized successfully")
+            else:
+                self.twitter_client = None
+                logger.info("Twitter client not initialized - no bearer token found")
+        except ImportError:
+            self.tweepy = None
+            self.twitter_client = None
+            logger.warning("tweepy not installed - Twitter integration disabled")
     
     def fetch_and_analyze_trends(self):
         """Fetch trends from various sources and analyze them"""
         new_trends = []
         
-        # Since we don't have access to real APIs in this demo, we'll simulate trend data
-        # In a real implementation, this would call actual social media APIs
+        # Try to fetch real trends from social media APIs
+        real_trends = self._fetch_real_trends()
         
-        simulated_trends = self._generate_simulated_trends()
+        if real_trends:
+            logger.info(f"Found {len(real_trends)} real trends")
+            trends_to_process = real_trends
+        else:
+            # Fallback to simulated trend data
+            logger.warning("Using simulated trends as fallback")
+            trends_to_process = self._generate_simulated_trends()
         
-        for trend_data in simulated_trends:
+        for trend_data in trends_to_process:
             # Check if trend already exists
             existing_trend = Trend.query.filter_by(
                 keyword=trend_data['keyword'],
@@ -50,6 +83,80 @@ class TrendAnalyzer:
         
         db.session.commit()
         return new_trends
+    
+    def _fetch_real_trends(self):
+        """Fetch real trends from social media APIs"""
+        all_trends = []
+        
+        # Fetch Twitter trends
+        twitter_trends = self._fetch_twitter_trends()
+        if twitter_trends:
+            all_trends.extend(twitter_trends)
+        
+        # TODO: Add Instagram, TikTok, Facebook trend fetching
+        
+        return all_trends
+    
+    def _fetch_twitter_trends(self):
+        """Fetch trends from Twitter API"""
+        if not self.twitter_client:
+            logger.info("Twitter client not available")
+            return None
+        
+        try:
+            # Get trending topics (Twitter API v2 doesn't have direct trending endpoint)
+            # We'll search for recent popular tweets as a proxy for trends
+            queries = ["AI", "technology", "innovation", "socialmedia", "trending"]
+            trends = []
+            
+            for query in queries:
+                # Search for recent tweets
+                tweets = self.twitter_client.search_recent_tweets(
+                    query=query,
+                    max_results=10,
+                    tweet_fields=['public_metrics', 'created_at']
+                )
+                
+                if tweets.data:
+                    # Calculate engagement metrics
+                    total_likes = sum(tweet.public_metrics['like_count'] for tweet in tweets.data)
+                    total_retweets = sum(tweet.public_metrics['retweet_count'] for tweet in tweets.data)
+                    
+                    # Create trend data
+                    trend_data = {
+                        'keyword': query,
+                        'platform': 'twitter',
+                        'engagement_score': min((total_likes + total_retweets * 2) / 1000, 10.0),  # Normalize to 0-10 scale
+                        'volume': len(tweets.data),
+                        'growth_rate': random.uniform(-10.0, 50.0),  # Simulated growth rate
+                        'sentiment': random.choice(['positive', 'negative', 'neutral']),
+                        'category': self._categorize_trend(query),
+                        'hashtags': [f"#{query.replace(' ', '')}", "#trending", "#twitter"]
+                    }
+                    trends.append(trend_data)
+            
+            logger.info(f"Fetched {len(trends)} Twitter trends")
+            return trends
+            
+        except Exception as e:
+            logger.error(f"Error fetching Twitter trends: {str(e)}")
+            return None
+    
+    def _categorize_trend(self, keyword):
+        """Categorize a trend based on its keyword"""
+        keyword_lower = keyword.lower()
+        if any(word in keyword_lower for word in ['ai', 'artificial', 'machine', 'tech', 'software']):
+            return 'technology'
+        elif any(word in keyword_lower for word in ['movie', 'music', 'celebrity', 'entertainment']):
+            return 'entertainment'
+        elif any(word in keyword_lower for word in ['health', 'fitness', 'food', 'lifestyle']):
+            return 'lifestyle'
+        elif any(word in keyword_lower for word in ['business', 'finance', 'economy']):
+            return 'business'
+        elif any(word in keyword_lower for word in ['sport', 'football', 'basketball', 'soccer']):
+            return 'sports'
+        else:
+            return random.choice(['technology', 'entertainment', 'lifestyle', 'business', 'sports', 'news'])
     
     def _generate_simulated_trends(self):
         """Generate simulated trend data for demonstration purposes"""

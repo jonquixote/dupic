@@ -19,6 +19,8 @@ if litellm is not None:
     litellm.gemini_api_key = os.getenv("GEMINI_API_KEY")
     litellm.cohere_api_key = os.getenv("COHERE_API_KEY")
     litellm.anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+    litellm.openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
+    litellm.cerebras_api_key = os.getenv("CEREBRAS_API_KEY")
 else:
     # litellm is optional for editor/CI when not installed.
     # Runtime calls that require litellm will raise a clear ImportError.
@@ -30,6 +32,8 @@ class AIProvider(Enum):
     GEMINI = "gemini"
     COHERE = "cohere"
     ANTHROPIC = "anthropic"
+    OPENROUTER = "openrouter"
+    CEREBRAS = "cerebras"
 
 @dataclass
 class AIModel:
@@ -74,6 +78,15 @@ class AIProviderManager:
         self.models[AIProvider.ANTHROPIC] = [
             AIModel("claude-3-opus-20240229", AIProvider.ANTHROPIC, ["text"], 200000),
             AIModel("claude-3.5-sonnet-20240620", AIProvider.ANTHROPIC, ["text"], 200000),
+        ]
+
+        self.models[AIProvider.OPENROUTER] = [
+            AIModel("openrouter/google/palm-2-chat-bison", AIProvider.OPENROUTER, ["text"], 8192),
+            AIModel("openrouter/meta-llama/llama-3-8b-instruct", AIProvider.OPENROUTER, ["text"], 8192),
+        ]
+
+        self.models[AIProvider.CEREBRAS] = [
+            AIModel("cerebras/llama3-70b-instruct", AIProvider.CEREBRAS, ["text"], 4096),
         ]
 
     def get_available_providers(self) -> List[AIProvider]:

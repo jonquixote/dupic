@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://5000-i540tybl1fxpgt1rl4jex-81b4f8a2.manusvm.computer/api'
+const API_BASE_URL = 'http://localhost:5000/api'
 
 class ApiService {
   async request(endpoint, options = {}) {

@@ -1,8 +1,13 @@
 import openai
 import requests
 import json
+import logging
 from typing import Dict, Any, Optional
 from src.models import db, AIProviderConfig
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class AIProviderService:
     """Service for managing AI provider configurations and API calls."""
@@ -73,80 +78,285 @@ class AIProviderService:
     def _make_api_call(self, config: AIProviderConfig, call_type: str, data: Any, model: str) -> Dict[str, Any]:
         """Make API call to the configured provider."""
         provider_name = config.provider_name.lower()
+        logger.info(f"Making API call to {provider_name} for {call_type} with model {model}")
+        
         if provider_name not in self.supported_providers:
-            return {"error": f"Unsupported provider: {provider_name}"}
+            error_msg = f"Unsupported provider: {provider_name}"
+            logger.error(error_msg)
+            return {"error": error_msg}
         
         try:
-            return self.supported_providers[provider_name](config, call_type, data, model)
+            result = self.supported_providers[provider_name](config, call_type, data, model)
+            if "error" in result:
+                logger.error(f"API call to {provider_name} failed: {result['error']}")
+            else:
+                logger.info(f"API call to {provider_name} successful")
+            return result
         except Exception as e:
-            return {"error": f"API call failed: {str(e)}"}
+            error_msg = f"API call failed: {str(e)}"
+            logger.error(error_msg)
+            return {"error": error_msg}
     
     def _call_openai(self, config: AIProviderConfig, call_type: str, data: Any, model: str) -> Dict[str, Any]:
         """Make API call to OpenAI."""
-        client = openai.OpenAI(api_key=config.api_key)
-        
-        if call_type == "text":
-            response = client.chat.completions.create(
-                model=model,
-                messages=[{"role": "user", "content": data}],
-                max_tokens=1000
-            )
-            return {
-                "success": True,
-                "content": response.choices[0].message.content,
-                "usage": response.usage.dict() if response.usage else None
-            }
-        
-        elif call_type == "speech_to_text":
-            # For speech-to-text, data should be audio bytes
-            response = client.audio.transcriptions.create(
-                model=model,
-                file=data
-            )
-            return {
-                "success": True,
-                "transcription": response.text
-            }
-        
-        elif call_type == "vision_to_text":
-            # For vision, data should be {"image": bytes, "prompt": str}
-            response = client.chat.completions.create(
-                model=model,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": data.get("prompt", "Describe this image in detail.")},
-                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{data['image']}"}}
-                        ]
-                    }
-                ],
-                max_tokens=1000
-            )
-            return {
-                "success": True,
-                "description": response.choices[0].message.content,
-                "usage": response.usage.dict() if response.usage else None
-            }
-        
-        return {"error": f"Unsupported call type: {call_type}"}
+        try:
+            client = openai.OpenAI(api_key=config.api_key)
+            
+            if call_type == "text":
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=[{"role": "user", "content": data}],
+                    max_tokens=1000
+                )
+                return {
+                    "success": True,
+                    "content": response.choices[0].message.content,
+                    "usage": response.usage.dict() if response.usage else None
+                }
+            
+            elif call_type == "speech_to_text":
+                # For speech-to-text, data should be audio bytes
+                import io
+                audio_file = io.BytesIO(data)
+                audio_file.name = "audio.wav"  # Give it a name for the API
+                
+                response = client.audio.transcriptions.create(
+                    model=model,
+                    file=audio_file
+                )
+                return {
+                    "success": True,
+                    "transcription": response.text
+                }
+            
+            elif call_type == "vision_to_text":
+                # For vision, data should be {"image": bytes, "prompt": str}
+                import base64
+                # Convert image bytes to base64
+                image_data = base64.b64encode(data["image"]).decode("utf-8")
+                prompt = data.get("prompt", "Describe this image in detail.")
+                
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prompt},
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:image/jpeg;base64,{image_data}"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    max_tokens=1000
+                )
+                return {
+                    "success": True,
+                    "description": response.choices[0].message.content,
+                    "usage": response.usage.dict() if response.usage else None
+                }
+            
+            return {"error": f"Unsupported call type: {call_type}"}
+        except Exception as e:
+            return {"error": f"OpenAI API call failed: {str(e)}"}
     
     def _call_google(self, config: AIProviderConfig, call_type: str, data: Any, model: str) -> Dict[str, Any]:
         """Make API call to Google AI (Gemini)."""
-        # Placeholder for Google AI implementation
-        # This would require the Google AI SDK
-        return {"error": "Google AI integration not yet implemented"}
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=config.api_key)
+            
+            if call_type == "text":
+                gemini_model = genai.GenerativeModel(model)
+                response = gemini_model.generate_content(data)
+                return {
+                    "success": True,
+                    "content": response.text,
+                    "usage": {
+                        "prompt_tokens": response.usage_metadata.prompt_token_count if response.usage_metadata else 0,
+                        "completion_tokens": response.usage_metadata.candidates_token_count if response.usage_metadata else 0,
+                        "total_tokens": response.usage_metadata.total_token_count if response.usage_metadata else 0
+                    } if response.usage_metadata else {}
+                }
+            
+            elif call_type == "speech_to_text":
+                # Gemini doesn't have a direct speech-to-text API
+                # We would need to use a separate service for this
+                return {"error": "Speech-to-text not directly supported by Google Gemini. Use a separate transcription service."}
+            
+            elif call_type == "vision_to_text":
+                # For vision, data should be {"image": bytes, "prompt": str}
+                gemini_model = genai.GenerativeModel(model)
+                import io
+                from PIL import Image
+                
+                # Convert bytes to PIL Image
+                image = Image.open(io.BytesIO(data["image"]))
+                prompt = data.get("prompt", "Describe this image in detail.")
+                
+                response = gemini_model.generate_content([prompt, image])
+                return {
+                    "success": True,
+                    "description": response.text,
+                    "usage": {
+                        "prompt_tokens": response.usage_metadata.prompt_token_count if response.usage_metadata else 0,
+                        "completion_tokens": response.usage_metadata.candidates_token_count if response.usage_metadata else 0,
+                        "total_tokens": response.usage_metadata.total_token_count if response.usage_metadata else 0
+                    } if response.usage_metadata else {}
+                }
+            
+            return {"error": f"Unsupported call type: {call_type}"}
+        except Exception as e:
+            return {"error": f"Google AI API call failed: {str(e)}"}
     
     def _call_anthropic(self, config: AIProviderConfig, call_type: str, data: Any, model: str) -> Dict[str, Any]:
         """Make API call to Anthropic (Claude)."""
-        # Placeholder for Anthropic implementation
-        # This would require the Anthropic SDK
-        return {"error": "Anthropic integration not yet implemented"}
+        try:
+            from anthropic import Anthropic
+            client = Anthropic(api_key=config.api_key)
+            
+            if call_type == "text":
+                response = client.messages.create(
+                    model=model,
+                    max_tokens=1000,
+                    messages=[{"role": "user", "content": data}]
+                )
+                return {
+                    "success": True,
+                    "content": response.content[0].text,
+                    "usage": {
+                        "prompt_tokens": response.usage.input_tokens,
+                        "completion_tokens": response.usage.output_tokens,
+                        "total_tokens": response.usage.input_tokens + response.usage.output_tokens
+                    }
+                }
+            
+            elif call_type == "speech_to_text":
+                # Anthropic doesn't have a direct speech-to-text API
+                # We would need to use a separate service for this
+                return {"error": "Speech-to-text not directly supported by Anthropic. Use a separate transcription service."}
+            
+            elif call_type == "vision_to_text":
+                # For vision, data should be {"image": bytes, "prompt": str}
+                import base64
+                # Convert image bytes to base64
+                image_data = base64.b64encode(data["image"]).decode("utf-8")
+                prompt = data.get("prompt", "Describe this image in detail.")
+                
+                response = client.messages.create(
+                    model=model,
+                    max_tokens=1000,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "image",
+                                    "source": {
+                                        "type": "base64",
+                                        "media_type": "image/jpeg",
+                                        "data": image_data,
+                                    },
+                                },
+                                {
+                                    "type": "text",
+                                    "text": prompt,
+                                },
+                            ],
+                        }
+                    ],
+                )
+                return {
+                    "success": True,
+                    "description": response.content[0].text,
+                    "usage": {
+                        "prompt_tokens": response.usage.input_tokens,
+                        "completion_tokens": response.usage.output_tokens,
+                        "total_tokens": response.usage.input_tokens + response.usage.output_tokens
+                    }
+                }
+            
+            return {"error": f"Unsupported call type: {call_type}"}
+        except Exception as e:
+            return {"error": f"Anthropic API call failed: {str(e)}"}
     
     def _call_azure(self, config: AIProviderConfig, call_type: str, data: Any, model: str) -> Dict[str, Any]:
         """Make API call to Azure OpenAI."""
-        # Placeholder for Azure OpenAI implementation
-        return {"error": "Azure OpenAI integration not yet implemented"}
+        try:
+            from openai import AzureOpenAI
+            import os
+            
+            # For Azure, we need to extract the endpoint from the API key or config
+            # The config might need to store additional Azure-specific information
+            # For now, we'll assume it's in environment variables
+            azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "")
+            api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-15-preview")
+            
+            if not azure_endpoint:
+                return {"error": "Azure OpenAI endpoint not configured. Set AZURE_OPENAI_ENDPOINT environment variable."}
+            
+            client = AzureOpenAI(
+                azure_endpoint=azure_endpoint,
+                api_key=config.api_key,
+                api_version=api_version
+            )
+            
+            if call_type == "text":
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=[{"role": "user", "content": data}],
+                    max_tokens=1000
+                )
+                return {
+                    "success": True,
+                    "content": response.choices[0].message.content,
+                    "usage": response.usage.dict() if response.usage else None
+                }
+            
+            elif call_type == "speech_to_text":
+                # For speech-to-text, data should be audio bytes
+                # Azure OpenAI doesn't have a direct speech-to-text API
+                # We would need to use Azure Speech Service for this
+                return {"error": "Speech-to-text not directly supported by Azure OpenAI. Use Azure Speech Service."}
+            
+            elif call_type == "vision_to_text":
+                # For vision, data should be {"image": bytes, "prompt": str}
+                import base64
+                # Convert image bytes to base64
+                image_data = base64.b64encode(data["image"]).decode("utf-8")
+                prompt = data.get("prompt", "Describe this image in detail.")
+                
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prompt},
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:image/jpeg;base64,{image_data}"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    max_tokens=1000
+                )
+                return {
+                    "success": True,
+                    "description": response.choices[0].message.content,
+                    "usage": response.usage.dict() if response.usage else None
+                }
+            
+            return {"error": f"Unsupported call type: {call_type}"}
+        except Exception as e:
+            return {"error": f"Azure OpenAI API call failed: {str(e)}"}
     
     def test_configuration(self, config: AIProviderConfig) -> Dict[str, Any]:
         """Test an AI provider configuration."""

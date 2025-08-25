@@ -33,6 +33,40 @@ def get_trends():
         'updated_at': trend.updated_at.isoformat() if trend.updated_at else None,
     } for trend in trends])
 
+@trends_bp.route("/trends/top", methods=["GET"])
+def get_top_trends():
+    """Get top trends with optional limit."""
+    limit = request.args.get('limit', default=10, type=int)
+    platform = request.args.get('platform')
+    
+    query = Trend.query
+    if platform:
+        query = query.filter_by(platform=platform)
+        
+    trends = query.order_by(Trend.engagement_score.desc()).limit(limit).all()
+    return jsonify([{
+        'id': trend.id,
+        'keyword': trend.keyword,
+        'platform': trend.platform,
+        'engagement_score': trend.engagement_score,
+        'volume': trend.volume,
+        'growth_rate': trend.growth_rate,
+        'sentiment': trend.sentiment,
+        'category': trend.category,
+        'hashtags': json.loads(trend.hashtags) if trend.hashtags else [],
+        'created_at': trend.created_at.isoformat() if trend.created_at else None,
+        'updated_at': trend.updated_at.isoformat() if trend.updated_at else None,
+    } for trend in trends])
+
+@trends_bp.route("/trends/refresh", methods=["POST"])
+def refresh_trends():
+    """Trigger a new trend analysis and storage task."""
+    new_trends = trend_analyzer.fetch_and_analyze_trends()
+    return jsonify({
+        "message": "Trend analysis completed.",
+        "new_trends_count": len(new_trends)
+    })
+
 @trends_bp.route("/trends/analyze", methods=["POST"])
 def analyze_trends():
     """Trigger a new trend analysis and storage task."""

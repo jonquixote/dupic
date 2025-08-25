@@ -1,9 +1,22 @@
 from flask import Blueprint, jsonify, request
 from src.models import db, AIProviderConfig
 from src.services.ai_provider_service import AIProviderService
+from src.ai_providers import ai_manager
 
 ai_configs_bp = Blueprint("ai_configs", __name__)
 ai_service = AIProviderService()
+
+@ai_configs_bp.route("/ai_providers", methods=["GET"])
+def get_ai_providers():
+    providers = ai_manager.get_available_providers()
+    response = []
+    for provider in providers:
+        models = ai_manager.get_models_for_provider(provider)
+        response.append({
+            "name": provider.value,
+            "models": [model.name for model in models]
+        })
+    return jsonify(response)
 
 @ai_configs_bp.route("/ai_configs", methods=["POST"])
 def add_ai_config():

@@ -85,3 +85,107 @@ def generate_content_route():
     ))
 
     return jsonify(result)
+
+@content_generation_bp.route("/content/generate/variations", methods=["POST"])
+def generate_content_variations_route():
+    """Generate multiple variations of content based on a trend and character profile."""
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid JSON"}), 400
+
+    trend_id = data.get("trend_id")
+    character_id = data.get("character_id")
+    provider_name = data.get("provider")
+    model_name = data.get("model")
+    content_type = data.get("content_type", "post")
+    platform = data.get("platform", "twitter")
+    count = data.get("count", 3)
+
+    if not all([trend_id, character_id, provider_name, model_name]):
+        return jsonify({"error": "trend_id, character_id, provider, and model are required"}), 400
+
+    try:
+        provider = AIProvider(provider_name)
+    except ValueError:
+        return jsonify({"error": f"Invalid AI provider: {provider_name}"}), 400
+
+    trend = Trend.query.get(trend_id)
+    if not trend:
+        return jsonify({"error": f"Trend with id {trend_id} not found"}), 404
+    
+    character = CharacterProfile.query.get(character_id)
+    if not character:
+        return jsonify({"error": f"CharacterProfile with id {character_id} not found"}), 404
+
+    content_generator = ContentGenerator(provider=provider, model=model_name)
+    
+    # Run the async function in a new event loop
+    result = asyncio.run(content_generator.generate_multiple_variations(
+        trend=trend,
+        character=character,
+        content_type=content_type,
+        platform=platform,
+        count=count
+    ))
+
+    return jsonify(result)
+
+@content_generation_bp.route("/content/hashtags", methods=["POST"])
+def generate_hashtags_route():
+    """Generate hashtags based on a trend and character profile."""
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid JSON"}), 400
+
+    trend_id = data.get("trend_id")
+    character_id = data.get("character_id")
+    provider_name = data.get("provider")
+    model_name = data.get("model")
+    count = data.get("count", 8)
+
+    if not all([trend_id, character_id, provider_name, model_name]):
+        return jsonify({"error": "trend_id, character_id, provider, and model are required"}), 400
+
+    try:
+        provider = AIProvider(provider_name)
+    except ValueError:
+        return jsonify({"error": f"Invalid AI provider: {provider_name}"}), 400
+
+    trend = Trend.query.get(trend_id)
+    if not trend:
+        return jsonify({"error": f"Trend with id {trend_id} not found"}), 404
+    
+    character = CharacterProfile.query.get(character_id)
+    if not character:
+        return jsonify({"error": f"CharacterProfile with id {character_id} not found"}), 404
+
+    content_generator = ContentGenerator(provider=provider, model=model_name)
+    
+    # Run the async function in a new event loop
+    result = asyncio.run(content_generator.generate_hashtags(
+        trend=trend,
+        character=character,
+        count=count
+    ))
+
+    return jsonify({"hashtags": result})
+
+@content_generation_bp.route("/content/optimize", methods=["POST"])
+def optimize_content_route():
+    """Optimize content for a specific platform."""
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid JSON"}), 400
+
+    content = data.get("content")
+    platform = data.get("platform", "twitter")
+
+    if not content:
+        return jsonify({"error": "content is required"}), 400
+
+    # For optimization, we don't need an AI provider, so we'll create a simple content generator
+    # with a default provider and model
+    content_generator = ContentGenerator(provider=AIProvider.OPENAI, model="gpt-4o-mini")
+    optimized_content = content_generator.optimize_for_platform(content, platform)
+
+    return jsonify({"optimized_content": optimized_content})

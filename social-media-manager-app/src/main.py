@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from flask import Flask, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
-from .models import db, User, AIProviderConfig, VideoAnalysis, UserAnalytics, FavoriteContent, CharacterProfile, ApiKey, Trend, ContentRecommendation
+from .models.database import db
 
 # Import blueprints
 from .routes.ai_configs import ai_configs_bp
