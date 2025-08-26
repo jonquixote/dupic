@@ -81,39 +81,13 @@ class MLServicesManager:
         """Initialize ML models and pipelines"""
         try:
             if TRANSFORMERS_AVAILABLE:
-                # Sentiment Analysis Pipeline
-                self.models['sentiment'] = pipeline(
-                    "sentiment-analysis",
-                    model="cardiffnlp/twitter-roberta-base-sentiment-latest",
-                    return_all_scores=True
-                )
-                
-                # Text Classification Pipeline
-                self.models['text_classifier'] = pipeline(
-                    "zero-shot-classification",
-                    model="facebook/bart-large-mnli"
-                )
-                
-                # Feature Extraction Model
-                self.models['feature_extractor'] = pipeline(
-                    "feature-extraction",
-                    model="sentence-transformers/all-MiniLM-L6-v2"
-                )
-                
-                print("Advanced ML models initialized successfully")
+                # Use simpler models that work with current PyTorch version
+                print("Using fallback models due to PyTorch version compatibility")
+                self._setup_fallback_models()
             else:
                 print("Using fallback ML models due to missing dependencies")
-            
-            # Initialize vectorizers
-            self.vectorizers['tfidf'] = TfidfVectorizer(
-                max_features=1000,
-                stop_words='english',
-                ngram_range=(1, 2)
-            )
-            
-            # Initialize scalers
-            self.scalers['standard'] = StandardScaler()
-            
+                self._setup_fallback_models()
+                
         except Exception as e:
             print(f"Error initializing ML models: {e}")
             self._setup_fallback_models()

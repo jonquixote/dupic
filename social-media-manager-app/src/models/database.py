@@ -15,5 +15,5 @@ class User(Base):
 
 class APIKey(Base):
     __tablename__ = "api_key"
-    id = Column(Integer, primary_t_code=
+    id = Column(Integer, primary_key=True)
 

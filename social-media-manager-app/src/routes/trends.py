@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 from src.services.trend_analyzer import TrendAnalyzer
 from src.models import Trend, db
 import json
+from datetime import datetime, timedelta
 
 trends_bp = Blueprint("trends", __name__)
 trend_analyzer = TrendAnalyzer()
@@ -11,12 +12,26 @@ def get_trends():
     """Get a list of stored trends, with optional filtering."""
     platform = request.args.get('platform')
     category = request.args.get('category')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
     
     query = Trend.query
     if platform:
         query = query.filter_by(platform=platform)
     if category:
         query = query.filter_by(category=category)
+    if start_date:
+        try:
+            start_dt = datetime.fromisoformat(start_date)
+            query = query.filter(Trend.created_at >= start_dt)
+        except ValueError:
+            pass  # Invalid date format, ignore filter
+    if end_date:
+        try:
+            end_dt = datetime.fromisoformat(end_date)
+            query = query.filter(Trend.created_at <= end_dt)
+        except ValueError:
+            pass  # Invalid date format, ignore filter
         
     trends = query.order_by(Trend.engagement_score.desc()).limit(100).all()
     return jsonify([{
@@ -35,13 +50,30 @@ def get_trends():
 
 @trends_bp.route("/trends/top", methods=["GET"])
 def get_top_trends():
-    """Get top trends with optional limit."""
+    """Get top trends with optional limit and filters."""
     limit = request.args.get('limit', default=10, type=int)
     platform = request.args.get('platform')
+    category = request.args.get('category')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
     
     query = Trend.query
     if platform:
         query = query.filter_by(platform=platform)
+    if category:
+        query = query.filter_by(category=category)
+    if start_date:
+        try:
+            start_dt = datetime.fromisoformat(start_date)
+            query = query.filter(Trend.created_at >= start_dt)
+        except ValueError:
+            pass  # Invalid date format, ignore filter
+    if end_date:
+        try:
+            end_dt = datetime.fromisoformat(end_date)
+            query = query.filter(Trend.created_at <= end_dt)
+        except ValueError:
+            pass  # Invalid date format, ignore filter
         
     trends = query.order_by(Trend.engagement_score.desc()).limit(limit).all()
     return jsonify([{
@@ -75,3 +107,145 @@ def analyze_trends():
         "message": "Trend analysis completed.",
         "new_trends_count": len(new_trends)
     })
+
+@trends_bp.route("/trends/visualization/platform-distribution", methods=["GET"])
+def get_platform_distribution():
+    """Get trend distribution by platform for visualization."""
+    # Get date filters
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    query = db.session.query(
+        Trend.platform,
+        db.func.count(Trend.id).label('count'),
+        db.func.avg(Trend.engagement_score).label('avg_engagement')
+    ).group_by(Trend.platform)
+    
+    # Apply date filters
+    if start_date:
+        try:
+            start_dt = datetime.fromisoformat(start_date)
+            query = query.filter(Trend.created_at >= start_dt)
+        except ValueError:
+            pass
+    if end_date:
+        try:
+            end_dt = datetime.fromisoformat(end_date)
+            query = query.filter(Trend.created_at <= end_dt)
+        except ValueError:
+            pass
+    
+    results = query.all()
+    
+    return jsonify([{
+        'platform': result.platform,
+        'count': result.count,
+        'avg_engagement': float(result.avg_engagement) if result.avg_engagement else 0.0
+    } for result in results])
+
+@trends_bp.route("/trends/visualization/category-distribution", methods=["GET"])
+def get_category_distribution():
+    """Get trend distribution by category for visualization."""
+    # Get filters
+    platform = request.args.get('platform')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    query = db.session.query(
+        Trend.category,
+        db.func.count(Trend.id).label('count'),
+        db.func.avg(Trend.engagement_score).label('avg_engagement')
+    ).group_by(Trend.category)
+    
+    # Apply filters
+    if platform:
+        query = query.filter(Trend.platform == platform)
+    if start_date:
+        try:
+            start_dt = datetime.fromisoformat(start_date)
+            query = query.filter(Trend.created_at >= start_dt)
+        except ValueError:
+            pass
+    if end_date:
+        try:
+            end_dt = datetime.fromisoformat(end_date)
+            query = query.filter(Trend.created_at <= end_dt)
+        except ValueError:
+            pass
+    
+    results = query.all()
+    
+    return jsonify([{
+        'category': result.category,
+        'count': result.count,
+        'avg_engagement': float(result.avg_engagement) if result.avg_engagement else 0.0
+    } for result in results])
+
+@trends_bp.route("/trends/visualization/sentiment-distribution", methods=["GET"])
+def get_sentiment_distribution():
+    """Get trend distribution by sentiment for visualization."""
+    # Get filters
+    platform = request.args.get('platform')
+    category = request.args.get('category')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    query = db.session.query(
+        Trend.sentiment,
+        db.func.count(Trend.id).label('count')
+    ).group_by(Trend.sentiment)
+    
+    # Apply filters
+    if platform:
+        query = query.filter(Trend.platform == platform)
+    if category:
+        query = query.filter(Trend.category == category)
+    if start_date:
+        try:
+            start_dt = datetime.fromisoformat(start_date)
+            query = query.filter(Trend.created_at >= start_dt)
+        except ValueError:
+            pass
+    if end_date:
+        try:
+            end_dt = datetime.fromisoformat(end_date)
+            query = query.filter(Trend.created_at <= end_dt)
+        except ValueError:
+            pass
+    
+    results = query.all()
+    
+    return jsonify([{
+        'sentiment': result.sentiment,
+        'count': result.count
+    } for result in results])
+
+@trends_bp.route("/trends/visualization/engagement-over-time", methods=["GET"])
+def get_engagement_over_time():
+    """Get engagement scores over time for visualization."""
+    # Get filters
+    platform = request.args.get('platform')
+    category = request.args.get('category')
+    days = request.args.get('days', default=30, type=int)
+    
+    # Calculate date range
+    end_date = datetime.utcnow()
+    start_date = end_date - timedelta(days=days)
+    
+    query = db.session.query(
+        Trend.created_at,
+        Trend.engagement_score
+    ).filter(Trend.created_at >= start_date)
+    
+    # Apply filters
+    if platform:
+        query = query.filter(Trend.platform == platform)
+    if category:
+        query = query.filter(Trend.category == category)
+    
+    results = query.order_by(Trend.created_at).all()
+    
+    return jsonify([{
+        'date': result.created_at.isoformat(),
+        'engagement_score': result.engagement_score
+    } for result in results])

@@ -3,12 +3,12 @@ import sys
 # DON'T CHANGE THIS !!!
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, Blueprint
 from flask_cors import CORS
 from dotenv import load_dotenv
-from .models.database import db
+from .models import db
 
-# Import blueprints
+# Import blueprints with explicit type hints
 from .routes.ai_configs import ai_configs_bp
 from .routes.video_analysis import video_analysis_bp
 from .routes.user_analytics import user_analytics_bp
@@ -17,6 +17,16 @@ from .routes.characters import characters_bp
 from .routes.api_keys import api_keys_bp
 from .routes.content_generation import content_generation_bp
 from .routes.trends import trends_bp
+
+# Ensure all blueprints are Blueprint instances (not _DummyBlueprint)
+assert isinstance(ai_configs_bp, Blueprint)
+assert isinstance(video_analysis_bp, Blueprint)
+assert isinstance(user_analytics_bp, Blueprint)
+assert isinstance(favorite_content_bp, Blueprint)
+assert isinstance(characters_bp, Blueprint)
+assert isinstance(api_keys_bp, Blueprint)
+assert isinstance(content_generation_bp, Blueprint)
+assert isinstance(trends_bp, Blueprint)
 
 load_dotenv()
 

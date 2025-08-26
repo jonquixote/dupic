@@ -1,0 +1,98 @@
+Connected to MongoDB successfully
+Using fallback models due to PyTorch version compatibility
+Setting up fallback ML models
+Starting AI Social Media Manager API on port 5000
+Debug mode: True
+ * Serving Flask app 'app'
+ * Debug mode: on
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.11.145:5000
+[33mPress CTRL+C to quit[0m
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 186-973-664
+127.0.0.1 - - [25/Aug/2025 16:59:17] "[33mGET /api/trends/visualization/platform-distribution HTTP/1.1[0m" 404 -
+ * Detected change in '/Users/johnny/Downloads/dupic/social-media-manager-app/app.py', reloading
+Connected to MongoDB successfully
+Using fallback models due to PyTorch version compatibility
+Setting up fallback ML models
+Starting AI Social Media Manager API on port 5000
+Debug mode: True
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 186-973-664
+127.0.0.1 - - [25/Aug/2025 17:03:29] "GET /api/trends/visualization/platform-distribution HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:03:40] "GET /api/trends/visualization/category-distribution HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:03:47] "GET /api/trends?platform=instagram&category=technology HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:04:44] "OPTIONS /api/trends HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:04:44] "OPTIONS /api/trends HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:04:44] "[35m[1mGET /api/trends HTTP/1.1[0m" 500 -
+127.0.0.1 - - [25/Aug/2025 17:04:44] "[35m[1mGET /api/trends HTTP/1.1[0m" 500 -
+127.0.0.1 - - [25/Aug/2025 17:04:51] "[33mOPTIONS /api/trends/top?limit=10 HTTP/1.1[0m" 404 -
+127.0.0.1 - - [25/Aug/2025 17:04:51] "[33mOPTIONS /api/characters?user_id=2 HTTP/1.1[0m" 404 -
+127.0.0.1 - - [25/Aug/2025 17:04:51] "[33mOPTIONS /api/trends/top?limit=10 HTTP/1.1[0m" 404 -
+127.0.0.1 - - [25/Aug/2025 17:04:51] "[33mOPTIONS /api/characters?user_id=2 HTTP/1.1[0m" 404 -
+127.0.0.1 - - [25/Aug/2025 17:05:00] "OPTIONS /api/trends HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:05:00] "OPTIONS /api/trends HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:05:00] "[35m[1mGET /api/trends HTTP/1.1[0m" 500 -
+127.0.0.1 - - [25/Aug/2025 17:05:00] "[35m[1mGET /api/trends HTTP/1.1[0m" 500 -
+127.0.0.1 - - [25/Aug/2025 17:05:18] "GET /api/providers HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:05:18] "GET /api/providers/openai/models HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:05:18] "GET /api/providers/openai/models HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:05:18] "GET /api/providers HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:06:58] "GET /api/providers/groq/models HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:07:00] "OPTIONS /api/trends HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:07:00] "OPTIONS /api/trends HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:07:00] "[35m[1mGET /api/trends HTTP/1.1[0m" 500 -
+127.0.0.1 - - [25/Aug/2025 17:07:00] "[35m[1mGET /api/trends HTTP/1.1[0m" 500 -
+127.0.0.1 - - [25/Aug/2025 17:07:02] "[33mOPTIONS /api/trends/top?limit=10 HTTP/1.1[0m" 404 -
+127.0.0.1 - - [25/Aug/2025 17:07:02] "[33mOPTIONS /api/trends/top?limit=10 HTTP/1.1[0m" 404 -
+127.0.0.1 - - [25/Aug/2025 17:07:02] "[33mOPTIONS /api/characters?user_id=2 HTTP/1.1[0m" 404 -
+127.0.0.1 - - [25/Aug/2025 17:07:02] "[33mOPTIONS /api/characters?user_id=2 HTTP/1.1[0m" 404 -
+127.0.0.1 - - [25/Aug/2025 17:07:43] "[33mOPTIONS /api/content/generate HTTP/1.1[0m" 404 -
+127.0.0.1 - - [25/Aug/2025 17:07:45] "[33mOPTIONS /api/content/generate HTTP/1.1[0m" 404 -
+127.0.0.1 - - [25/Aug/2025 17:07:51] "OPTIONS /api/trends HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:07:51] "OPTIONS /api/trends HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:07:51] "[35m[1mGET /api/trends HTTP/1.1[0m" 500 -
+127.0.0.1 - - [25/Aug/2025 17:07:51] "[35m[1mGET /api/trends HTTP/1.1[0m" 500 -
+127.0.0.1 - - [25/Aug/2025 17:08:12] "[33mOPTIONS /api/trends/top?limit=10 HTTP/1.1[0m" 404 -
+127.0.0.1 - - [25/Aug/2025 17:08:12] "[33mOPTIONS /api/trends/top?limit=10 HTTP/1.1[0m" 404 -
+127.0.0.1 - - [25/Aug/2025 17:08:12] "[33mOPTIONS /api/characters?user_id=2 HTTP/1.1[0m" 404 -
+127.0.0.1 - - [25/Aug/2025 17:08:12] "[33mOPTIONS /api/characters?user_id=2 HTTP/1.1[0m" 404 -
+127.0.0.1 - - [25/Aug/2025 17:08:16] "GET /api/providers HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:08:16] "GET /api/providers/openai/models HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:08:16] "GET /api/providers HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:08:16] "GET /api/providers/openai/models HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:08:53] "GET /api/providers/anthropic/models HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:08:56] "[33mOPTIONS /api/trends/top?limit=10 HTTP/1.1[0m" 404 -
+127.0.0.1 - - [25/Aug/2025 17:08:56] "[33mOPTIONS /api/characters?user_id=2 HTTP/1.1[0m" 404 -
+127.0.0.1 - - [25/Aug/2025 17:08:56] "[33mOPTIONS /api/trends/top?limit=10 HTTP/1.1[0m" 404 -
+127.0.0.1 - - [25/Aug/2025 17:08:56] "[33mOPTIONS /api/characters?user_id=2 HTTP/1.1[0m" 404 -
+127.0.0.1 - - [25/Aug/2025 17:09:47] "GET /api/providers HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:09:47] "GET /api/providers/openai/models HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:09:47] "GET /api/providers/openai/models HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:09:47] "GET /api/providers HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:10:03] "GET /api/providers HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:10:03] "GET /api/providers HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:10:03] "GET /api/providers/openai/models HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:10:03] "GET /api/providers/openai/models HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:10:17] "OPTIONS /api/trends HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:10:17] "OPTIONS /api/trends HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:10:17] "[35m[1mGET /api/trends HTTP/1.1[0m" 500 -
+127.0.0.1 - - [25/Aug/2025 17:10:17] "[35m[1mGET /api/trends HTTP/1.1[0m" 500 -
+127.0.0.1 - - [25/Aug/2025 17:12:05] "OPTIONS /api/trends HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:12:05] "OPTIONS /api/trends HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:12:05] "[35m[1mGET /api/trends HTTP/1.1[0m" 500 -
+127.0.0.1 - - [25/Aug/2025 17:12:05] "[35m[1mGET /api/trends HTTP/1.1[0m" 500 -
+127.0.0.1 - - [25/Aug/2025 17:20:03] "GET /api/providers HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:20:03] "GET /api/providers/openai/models HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:20:03] "GET /api/providers HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:20:03] "GET /api/providers/openai/models HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:37:43] "GET /api/health HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:38:04] "[35m[1mGET /api/trends HTTP/1.1[0m" 500 -
+127.0.0.1 - - [25/Aug/2025 17:38:29] "GET /api/providers HTTP/1.1" 200 -
+127.0.0.1 - - [25/Aug/2025 17:48:49] "[33mGET /api/trends/top?limit=5 HTTP/1.1[0m" 404 -
+127.0.0.1 - - [25/Aug/2025 17:49:11] "[35m[1mGET /api/trends HTTP/1.1[0m" 500 -
+127.0.0.1 - - [25/Aug/2025 17:51:29] "GET /api/providers HTTP/1.1" 200 -

@@ -519,6 +519,120 @@ def internal_error(error):
         'error': 'Internal server error'
     }), 500
 
+@app.route('/api/trends/visualization/platform-distribution', methods=['GET'])
+def get_platform_distribution():
+    """Get trend distribution by platform for visualization."""
+    try:
+        # Get date filters
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        
+        # For demo, return mock data
+        platform_distribution = [
+            {'platform': 'twitter', 'count': 45, 'avg_engagement': 7.2},
+            {'platform': 'instagram', 'count': 32, 'avg_engagement': 8.1},
+            {'platform': 'tiktok', 'count': 28, 'avg_engagement': 9.5},
+            {'platform': 'facebook', 'count': 19, 'avg_engagement': 6.8}
+        ]
+        
+        return jsonify({
+            'success': True,
+            'data': platform_distribution
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/trends/visualization/category-distribution', methods=['GET'])
+def get_category_distribution():
+    """Get trend distribution by category for visualization."""
+    try:
+        # Get filters
+        platform = request.args.get('platform')
+        
+        # For demo, return mock data
+        category_distribution = [
+            {'category': 'technology', 'count': 35, 'avg_engagement': 8.2},
+            {'category': 'entertainment', 'count': 28, 'avg_engagement': 7.9},
+            {'category': 'lifestyle', 'count': 22, 'avg_engagement': 8.5},
+            {'category': 'business', 'count': 18, 'avg_engagement': 7.1},
+            {'category': 'sports', 'count': 15, 'avg_engagement': 7.8}
+        ]
+        
+        return jsonify({
+            'success': True,
+            'data': category_distribution
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/trends/visualization/sentiment-distribution', methods=['GET'])
+def get_sentiment_distribution():
+    """Get trend distribution by sentiment for visualization."""
+    try:
+        # Get filters
+        platform = request.args.get('platform')
+        category = request.args.get('category')
+        
+        # For demo, return mock data
+        sentiment_distribution = [
+            {'sentiment': 'positive', 'count': 65},
+            {'sentiment': 'neutral', 'count': 25},
+            {'sentiment': 'negative', 'count': 10}
+        ]
+        
+        return jsonify({
+            'success': True,
+            'data': sentiment_distribution
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/trends/visualization/engagement-over-time', methods=['GET'])
+def get_engagement_over_time():
+    """Get engagement scores over time for visualization."""
+    try:
+        # Get filters
+        platform = request.args.get('platform')
+        category = request.args.get('category')
+        days = request.args.get('days', default=30, type=int)
+        
+        # For demo, return mock data
+        # Generate mock data for the last 30 days
+        import random
+        from datetime import datetime, timedelta
+        
+        engagement_data = []
+        for i in range(days):
+            date = datetime.utcnow() - timedelta(days=days-i)
+            engagement_score = random.uniform(6.0, 9.5)  # Random engagement score between 6.0 and 9.5
+            engagement_data.append({
+                'date': date.isoformat(),
+                'engagement_score': round(engagement_score, 2)
+            })
+        
+        return jsonify({
+            'success': True,
+            'data': engagement_data
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 if __name__ == '__main__':
     # Run the Flask app
     port = int(os.getenv('PORT', 5000))

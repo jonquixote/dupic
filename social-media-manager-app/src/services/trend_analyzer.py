@@ -36,6 +36,27 @@ class TrendAnalyzer:
             self.tweepy = None
             self.twitter_client = None
             logger.warning("tweepy not installed - Twitter integration disabled")
+        
+        # Initialize Instagram Graph API client
+        try:
+            self.instagram_access_token = os.getenv('INSTAGRAM_ACCESS_TOKEN')
+            if self.instagram_access_token:
+                logger.info("Instagram Graph API client ready")
+            else:
+                logger.info("Instagram Graph API client not configured - no access token found")
+        except Exception as e:
+            logger.warning(f"Instagram Graph API setup issue: {str(e)}")
+        
+        # Initialize TikTok API client
+        try:
+            self.tiktok_client_key = os.getenv('TIKTOK_CLIENT_KEY')
+            self.tiktok_client_secret = os.getenv('TIKTOK_CLIENT_SECRET')
+            if self.tiktok_client_key and self.tiktok_client_secret:
+                logger.info("TikTok API client ready")
+            else:
+                logger.info("TikTok API client not configured - missing credentials")
+        except Exception as e:
+            logger.warning(f"TikTok API setup issue: {str(e)}")
     
     def fetch_and_analyze_trends(self):
         """Fetch trends from various sources and analyze them"""
@@ -93,7 +114,15 @@ class TrendAnalyzer:
         if twitter_trends:
             all_trends.extend(twitter_trends)
         
-        # TODO: Add Instagram, TikTok, Facebook trend fetching
+        # Fetch Instagram trends
+        instagram_trends = self._fetch_instagram_trends()
+        if instagram_trends:
+            all_trends.extend(instagram_trends)
+        
+        # Fetch TikTok trends
+        tiktok_trends = self._fetch_tiktok_trends()
+        if tiktok_trends:
+            all_trends.extend(tiktok_trends)
         
         return all_trends
     
@@ -140,6 +169,78 @@ class TrendAnalyzer:
             
         except Exception as e:
             logger.error(f"Error fetching Twitter trends: {str(e)}")
+            return None
+    
+    def _fetch_instagram_trends(self):
+        """Fetch trends from Instagram Graph API"""
+        if not self.instagram_access_token:
+            logger.info("Instagram access token not available")
+            return None
+        
+        try:
+            import requests
+            
+            # For now, we'll simulate Instagram trends since we don't have real API access
+            # In a real implementation, you would use the Instagram Graph API
+            instagram_trending_keywords = [
+                "travel", "food", "fashion", "fitness", "art", "photography", 
+                "beauty", "lifestyle", "nature", "pets"
+            ]
+            
+            trends = []
+            for keyword in instagram_trending_keywords[:5]:  # Limit to 5 for demo
+                trend_data = {
+                    'keyword': keyword,
+                    'platform': 'instagram',
+                    'engagement_score': round(random.uniform(2.0, 9.0), 2),
+                    'volume': random.randint(1000, 50000),
+                    'growth_rate': round(random.uniform(-5.0, 100.0), 2),
+                    'sentiment': random.choice(['positive', 'negative', 'neutral']),
+                    'category': self._categorize_trend(keyword),
+                    'hashtags': [f"#{keyword}", "#instagram", "#trending"]
+                }
+                trends.append(trend_data)
+            
+            logger.info(f"Fetched {len(trends)} Instagram trends (simulated)")
+            return trends
+            
+        except Exception as e:
+            logger.error(f"Error fetching Instagram trends: {str(e)}")
+            return None
+    
+    def _fetch_tiktok_trends(self):
+        """Fetch trends from TikTok API"""
+        if not (self.tiktok_client_key and self.tiktok_client_secret):
+            logger.info("TikTok API credentials not available")
+            return None
+        
+        try:
+            # For now, we'll simulate TikTok trends since we don't have real API access
+            # In a real implementation, you would use the TikTok API
+            tiktok_trending_keywords = [
+                "dance", "comedy", "challenge", "duet", "stitch", 
+                "viral", "trend", "funny", "music", "reaction"
+            ]
+            
+            trends = []
+            for keyword in tiktok_trending_keywords[:5]:  # Limit to 5 for demo
+                trend_data = {
+                    'keyword': keyword,
+                    'platform': 'tiktok',
+                    'engagement_score': round(random.uniform(3.0, 10.0), 2),
+                    'volume': random.randint(5000, 100000),
+                    'growth_rate': round(random.uniform(10.0, 200.0), 2),
+                    'sentiment': random.choice(['positive', 'negative', 'neutral']),
+                    'category': self._categorize_trend(keyword),
+                    'hashtags': [f"#{keyword}", "#tiktok", "#fyp"]
+                }
+                trends.append(trend_data)
+            
+            logger.info(f"Fetched {len(trends)} TikTok trends (simulated)")
+            return trends
+            
+        except Exception as e:
+            logger.error(f"Error fetching TikTok trends: {str(e)}")
             return None
     
     def _categorize_trend(self, keyword):

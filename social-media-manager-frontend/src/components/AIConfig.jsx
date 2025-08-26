@@ -107,17 +107,13 @@ const AIConfig = () => {
             <div className="provider-stats">
               <div className="stat-item">
                 <span className="stat-label">Models</span>
-                <span className="stat-value neon-text">{providerData.models_count}</span>
+                <span className="stat-value neon-text">{providerData.models}</span>
               </div>
               <div className="stat-item">
-                <span className="stat-label">Capabilities</span>
-                <div className="capabilities-list">
-                  {providerData.capabilities.map((capability, index) => (
-                    <span key={index} className="capability-tag">
-                      {capability}
-                    </span>
-                  ))}
-                </div>
+                <span className="stat-label">Status</span>
+                <span className={`status-badge ${providerData.available ? 'online' : 'offline'}`}>
+                  {providerData.available ? 'Available' : 'Unavailable'}
+                </span>
               </div>
             </div>
 

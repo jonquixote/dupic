@@ -122,5 +122,121 @@ class AIProviderManager:
         except Exception as e:
             raise Exception(f"Error generating text with {model_name}: {str(e)}")
 
+    async def transcribe_audio(self, provider: 'AIProvider', audio_file_path: str, model: str, **kwargs) -> Dict[str, Any]:
+        """Transcribe audio using litellm
+        
+        Args:
+            provider (AIProvider): The AI provider to use
+            audio_file_path (str): Path to the audio file to transcribe
+            model (str): The model to use for transcription
+            **kwargs: Additional arguments to pass to the transcription API
+            
+        Returns:
+            Dict[str, Any]: Transcription result containing text, language, duration, and segments
+            
+        Raises:
+            Exception: If transcription fails
+        """
+        if litellm is None:
+            raise ImportError(
+                "litellm is not available. Install with `pip install litellm` "
+                "or set up the project environment that provides it."
+            )
+
+        # Map provider to model name
+        model_name = model
+        
+        try:
+            with open(audio_file_path, "rb") as audio_file:
+                response = await litellm.atranscription(
+                    model=model_name,
+                    file=audio_file,
+                    **kwargs
+                )
+
+            return {
+                "text": response.text,
+                "language": getattr(response, "language", None),
+                "duration": getattr(response, "duration", None),
+                "segments": getattr(response, "segments", [])
+            }
+
+        except Exception as e:
+            raise Exception(f"Error transcribing audio with {model_name}: {str(e)}")
+
+    async def analyze_image(self, provider: 'AIProvider', model: str, image_file_path: str, prompt: str, **kwargs) -> Dict[str, Any]:
+        """Analyze image using litellm
+        
+        Args:
+            provider (AIProvider): The AI provider to use
+            model (str): The model to use for image analysis
+            image_file_path (str): Path to the image file to analyze
+            prompt (str): Prompt to guide the image analysis
+            **kwargs: Additional arguments to pass to the analysis API
+            
+        Returns:
+            Dict[str, Any]: Analysis result containing content, usage, and model information
+            
+        Raises:
+            Exception: If image analysis fails
+        """
+        if litellm is None:
+            raise ImportError(
+                "litellm is not available. Install with `pip install litellm` "
+                "or set up the project environment that provides it."
+            )
+
+        # Map provider to model name
+        model_name = model
+        
+        try:
+            import base64
+            with open(image_file_path, "rb") as image_file:
+                image_data = base64.b64encode(image_file.read()).decode('utf-8')
+                
+            response = await litellm.acompletion(
+                model=model_name,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_data}"}}
+                        ]
+                    }
+                ],
+                **kwargs
+            )
+
+            return {
+                "content": response.choices[0].message.content,
+                "usage": response.usage.dict() if getattr(response, "usage", None) else {},
+                "model": getattr(response, "model", model_name)
+            }
+
+        except Exception as e:
+            raise Exception(f"Error analyzing image with {model_name}: {str(e)}")
+
+    def get_provider_status(self) -> Dict[str, Any]:
+        """Get status of all providers
+        
+        Returns:
+            Dict[str, Any]: Status information for each provider
+        """
+        status = {}
+        for provider in self.get_available_providers():
+            try:
+                # Try to get a simple response from the provider
+                status[provider.value] = {
+                    "available": True,
+                    "models": len(self.get_models_for_provider(provider))
+                }
+            except Exception:
+                status[provider.value] = {
+                    "available": False,
+                    "error": "Provider not configured or unavailable"
+                }
+        return status
+
 # Global instance
 ai_manager = AIProviderManager()
