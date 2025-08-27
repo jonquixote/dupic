@@ -37,6 +37,25 @@ def get_video_analysis(post_id):
         "provider_config_id": analysis.provider_config_id
     }), 200
 
+@video_analysis_bp.route("/video_analyses", methods=["GET"])
+def get_video_analyses():
+    """Get all video analyses for the current user."""
+    user_id = request.args.get("user_id", type=int)
+    if not user_id:
+        return jsonify({"error": "user_id is required"}), 400
+    
+    analyses = VideoAnalysis.query.filter_by(user_id=user_id).order_by(VideoAnalysis.analysis_date.desc()).all()
+    
+    return jsonify([{
+        "id": analysis.id,
+        "post_id": analysis.post_id,
+        "video_url": analysis.video_url,
+        "transcription_text": analysis.transcription_text,
+        "visual_description": analysis.visual_description,
+        "analysis_date": analysis.analysis_date.isoformat(),
+        "provider_config_id": analysis.provider_config_id
+    } for analysis in analyses]), 200
+
 @video_analysis_bp.route("/analyze_trending", methods=["POST"])
 def analyze_trending_content():
     """Analyze multiple trending content items."""

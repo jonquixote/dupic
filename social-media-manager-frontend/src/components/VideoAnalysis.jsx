@@ -19,6 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { toast } from 'sonner'
+import { apiService } from '@/services/api'
 
 export function VideoAnalysis() {
   const [analyses, setAnalyses] = useState([])
@@ -30,20 +32,48 @@ export function VideoAnalysis() {
     video_url: '',
     platform: 'tiktok'
   })
+  const [viewingAnalysis, setViewingAnalysis] = useState(null)
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
 
   useEffect(() => {
     fetchAnalyses()
   }, [])
 
-  const fetchAnalyses = async () => {
+    const fetchAnalyses = async () => {
     try {
-      // Mock data - replace with actual API call
+      // Get user ID from profile
+      const profileResponse = await apiService.getProfile()
+      const userId = profileResponse.user?.id || 1 // Fallback to 1 for demo
+      
+      // Call the backend API to fetch video analyses
+      const results = await apiService.getVideoAnalyses(userId)
+      
+      // Ensure all required fields are present
+      const normalizedResults = results.map(analysis => ({
+        id: analysis.id,
+        post_id: analysis.post_id,
+        video_url: analysis.video_url || '',
+        platform: analysis.platform || 'tiktok',
+        transcription_text: analysis.transcription_text || analysis.transcription || 'Transcription not available',
+        visual_description: analysis.visual_description || 'Visual description not available',
+        analysis_date: analysis.analysis_date || new Date().toISOString(),
+        engagement_score: analysis.engagement_score || 0,
+        trending_elements: Array.isArray(analysis.trending_elements) ? analysis.trending_elements : [],
+        sentiment: analysis.sentiment || 'neutral',
+        duration: analysis.duration || '00:00:00',
+        ...analysis // Include any other fields that might be present
+      }))
+      
+      setAnalyses(normalizedResults)
+    } catch (error) {
+      console.error('Error fetching video analyses:', error)
+      // Fallback to mock data
       setAnalyses([
         {
           id: 1,
           video_url: 'https://example.com/video1.mp4',
           platform: 'tiktok',
-          transcription_text: 'Hey everyone! Today I want to share with you this amazing productivity hack that has completely changed my workflow. It\'s all about using AI to automate your social media content creation...',
+          transcription_text: "Hey everyone! Today I want to share with you this amazing productivity hack that has completely changed my workflow. It's all about using AI to automate your social media content creation...",
           visual_description: 'A young professional in casual attire sitting in a modern home office setup. The background features a clean, minimalist desk with a laptop, ring light, and some plants. The lighting is bright and natural, creating a warm, inviting atmosphere. The person is gesturing enthusiastically while speaking to the camera.',
           analysis_date: '2024-08-23T10:30:00Z',
           engagement_score: 85,
@@ -64,34 +94,56 @@ export function VideoAnalysis() {
           duration: '00:00:45'
         }
       ])
-    } catch (error) {
-      console.error('Error fetching video analyses:', error)
     }
   }
 
   const analyzeVideo = async () => {
+    if (!formData.video_url) {
+      toast.error('Please enter a video URL')
+      return
+    }
+
     setAnalyzingVideo(true)
     try {
-      // Mock API call - replace with actual implementation
-      await new Promise(resolve => setTimeout(resolve, 3000))
+      // Get user ID from profile
+      const profileResponse = await apiService.getProfile()
+      const userId = profileResponse.user?.id || 1 // Fallback to 1 for demo
       
-      const newAnalysis = {
-        id: Date.now(),
-        ...formData,
-        transcription_text: 'Analysis in progress...',
-        visual_description: 'Visual analysis in progress...',
-        analysis_date: new Date().toISOString(),
-        engagement_score: Math.floor(Math.random() * 100),
-        trending_elements: ['trending', 'viral', 'content'],
-        sentiment: 'positive',
-        duration: '00:01:00'
+      // Call the backend API for video analysis
+      const result = await apiService.analyzeVideo({
+        user_id: userId,
+        video_url: formData.video_url,
+        platform: formData.platform
+      })
+      
+      // Check if the result is successful
+      if (result && (result.success === true || !result.error)) {
+        const newAnalysis = {
+          id: result.analysis_id || result.id || Date.now(),
+          post_id: result.post_id || null,
+          video_url: formData.video_url,
+          platform: formData.platform,
+          transcription_text: result.transcription || result.transcription_text || 'Transcription not available',
+          visual_description: result.visual_description || 'Visual description not available',
+          analysis_date: result.analysis_date || new Date().toISOString(),
+          engagement_score: result.engagement_score || 0,
+          trending_elements: Array.isArray(result.trending_elements) ? result.trending_elements : [],
+          sentiment: result.sentiment || 'neutral',
+          duration: result.duration || '00:00:00'
+        }
+        
+        setAnalyses([newAnalysis, ...analyses])
+        setIsAnalyzeDialogOpen(false)
+        resetForm()
+        toast.success('Video analysis completed!')
+      } else {
+        // Handle error response
+        const errorMessage = result?.error || 'Failed to analyze video'
+        toast.error(`Video analysis failed: ${errorMessage}`)
       }
-      
-      setAnalyses([newAnalysis, ...analyses])
-      setIsAnalyzeDialogOpen(false)
-      resetForm()
     } catch (error) {
       console.error('Error analyzing video:', error)
+      toast.error('Failed to analyze video: ' + (error.message || 'Unknown error'))
     } finally {
       setAnalyzingVideo(false)
     }
@@ -105,8 +157,11 @@ export function VideoAnalysis() {
   }
 
   const filteredAnalyses = analyses.filter(analysis => {
-    const matchesSearch = analysis.transcription_text.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         analysis.trending_elements.some(element => element.toLowerCase().includes(searchQuery.toLowerCase()))
+    const matchesSearch = (analysis.transcription_text && analysis.transcription_text.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                         (Array.isArray(analysis.trending_elements) && 
+                          analysis.trending_elements.some(element => 
+                            element && element.toLowerCase().includes(searchQuery.toLowerCase())
+                          ))
     const matchesPlatform = filterPlatform === 'all' || analysis.platform === filterPlatform
     return matchesSearch && matchesPlatform
   })
@@ -124,6 +179,31 @@ export function VideoAnalysis() {
     if (score >= 80) return 'text-green-400'
     if (score >= 60) return 'text-yellow-400'
     return 'text-red-400'
+  }
+
+  const handleDownload = (analysis) => {
+    // Create a blob with the analysis data
+    const data = JSON.stringify(analysis, null, 2)
+    const blob = new Blob([data], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    
+    // Create a temporary link and trigger download
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `video-analysis-${analysis.id}.json`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    
+    // Clean up
+    URL.revokeObjectURL(url)
+    
+    toast.success('Analysis downloaded successfully!')
+  }
+
+  const handleViewDetails = (analysis) => {
+    setViewingAnalysis(analysis)
+    setIsViewDialogOpen(true)
   }
 
   return (
@@ -312,10 +392,18 @@ export function VideoAnalysis() {
               </div>
               
               <div className="flex items-center space-x-2">
-                <Button size="sm" className="btn-secondary-2050 p-2">
+                <Button 
+                  size="sm" 
+                  className="btn-secondary-2050 p-2"
+                  onClick={() => handleDownload(analysis)}
+                >
                   <Download className="h-4 w-4" />
                 </Button>
-                <Button size="sm" className="btn-primary-2050 text-xs px-3">
+                <Button 
+                  size="sm" 
+                  className="btn-primary-2050 text-xs px-3"
+                  onClick={() => handleViewDetails(analysis)}
+                >
                   View Details
                 </Button>
               </div>
@@ -346,6 +434,129 @@ export function VideoAnalysis() {
           </div>
         )}
       </div>
+
+      {/* View Details Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="glass-dark border-white/20 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-gradient-blue">Video Analysis Details</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Detailed insights and analysis of your video content
+            </DialogDescription>
+          </DialogHeader>
+
+          {viewingAnalysis && (
+            <div className="space-y-6 py-4">
+              {/* Video Info */}
+              <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+                    <Play className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="font-medium capitalize">{viewingAnalysis.platform}</div>
+                    <div className="text-sm text-gray-400">{viewingAnalysis.duration}</div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className={`text-lg font-bold ${getEngagementColor(viewingAnalysis.engagement_score)}`}>
+                    {viewingAnalysis.engagement_score}%
+                  </div>
+                  <div className="text-xs text-gray-400">Engagement</div>
+                </div>
+              </div>
+
+              {/* Transcription */}
+              <div>
+                <h3 className="text-lg font-semibold mb-2 flex items-center">
+                  <MessageSquare className="h-5 w-5 mr-2 text-blue-400" />
+                  Full Transcription
+                </h3>
+                <div className="bg-white/5 rounded-lg p-4">
+                  <p className="text-gray-300 whitespace-pre-wrap">
+                    {viewingAnalysis.transcription_text}
+                  </p>
+                </div>
+              </div>
+
+              {/* Visual Analysis */}
+              <div>
+                <h3 className="text-lg font-semibold mb-2 flex items-center">
+                  <Eye className="h-5 w-5 mr-2 text-purple-400" />
+                  Visual Analysis
+                </h3>
+                <div className="bg-white/5 rounded-lg p-4">
+                  <p className="text-gray-300">
+                    {viewingAnalysis.visual_description}
+                  </p>
+                </div>
+              </div>
+
+              {/* Trending Elements */}
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Trending Elements</h3>
+                <div className="flex flex-wrap gap-2">
+                  {viewingAnalysis.trending_elements.map((element, index) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/30 text-sm text-blue-400"
+                    >
+                      #{element}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sentiment */}
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Sentiment Analysis</h3>
+                <div className="flex items-center space-x-4 p-4 bg-white/5 rounded-lg">
+                  <div className="text-center">
+                    <div className={`text-2xl font-bold ${getSentimentColor(viewingAnalysis.sentiment)}`}>
+                      {viewingAnalysis.sentiment}
+                    </div>
+                    <div className="text-xs text-gray-400">Overall Sentiment</div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="w-full bg-gray-700 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full ${
+                          viewingAnalysis.sentiment === 'positive' ? 'bg-green-500' :
+                          viewingAnalysis.sentiment === 'negative' ? 'bg-red-500' : 'bg-gray-500'
+                        }`}
+                        style={{ width: '100%' }}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-400 mt-1">
+                      <span>Negative</span>
+                      <span>Neutral</span>
+                      <span>Positive</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3">
+                <Button 
+                  variant="outline" 
+                  className="btn-secondary-2050"
+                  onClick={() => handleDownload(viewingAnalysis)}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Report
+                </Button>
+                <Button 
+                  className="btn-primary-2050"
+                  onClick={() => setIsViewDialogOpen(false)}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
